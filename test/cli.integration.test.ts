@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { mkdtemp, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -57,6 +57,22 @@ describe("cli integration", () => {
     expect(stdout.toString()).toContain("Purpose:");
     expect(stdout.toString()).toContain("aemdm asset get <assetId>");
     expect(stdout.toString()).toContain("LLM usage guidance:");
+    expect(stderr.toString()).toBe("");
+  });
+
+  test("prints help with a zero exit code", async () => {
+    const stdout = new MemoryStream();
+    const stderr = new MemoryStream();
+
+    const exitCode = await runCli(["--help"], {
+      env,
+      stdout: stdout as never,
+      stderr: stderr as never,
+      fetchImpl: vi.fn(),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.toString()).toContain("Usage: aemdm");
     expect(stderr.toString()).toBe("");
   });
 

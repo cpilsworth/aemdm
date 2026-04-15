@@ -40,11 +40,15 @@ export async function readProfileConfig(env: NodeJS.ProcessEnv): Promise<Profile
     }
 
     if (error instanceof z.ZodError) {
-      throw new Error(`Invalid aemdm profile config at ${configPath}: ${error.message}`);
+      throw new Error(`Invalid aemdm profile config at ${configPath}: ${error.message}`, {
+        cause: error,
+      });
     }
 
     if (error instanceof SyntaxError) {
-      throw new Error(`Unable to parse aemdm profile config at ${configPath}: ${error.message}`);
+      throw new Error(`Unable to parse aemdm profile config at ${configPath}: ${error.message}`, {
+        cause: error,
+      });
     }
 
     throw error;

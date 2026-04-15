@@ -452,7 +452,7 @@ function buildProgram(runtime: Runtime): Command {
     })
     .exitOverride();
 
-  const assetGet = configureCommonDeliveryOptions(
+  configureCommonDeliveryOptions(
     program.command("asset").description("Asset operations"),
   )
     .command("get <assetId>")
@@ -463,8 +463,6 @@ function buildProgram(runtime: Runtime): Command {
     .option("--metadata", "Fetch metadata JSON instead of building a URL")
     .option("--ims-token <token>", "IMS bearer token for metadata or binary requests")
     .action((assetId: string, options: AssetGetOptions) => handleAssetGet(assetId, options, runtime));
-
-  assetGet; // Keep typed command alive.
 
   configureCommonDeliveryOptions(
     program.command("search").description("Search assets and optionally resolve the first result"),
@@ -566,6 +564,16 @@ function toCliError(error: unknown): CliError {
   }
 
   if (error instanceof CommanderError) {
+    if (
+      Number(error.exitCode) === 0 ||
+      error.code === "commander.help" ||
+      error.code === "commander.helpDisplayed" ||
+      error.code === "commander.version" ||
+      error.code === "commander.versionDisplayed"
+    ) {
+      return new CliError("", 0);
+    }
+
     return new CliError(error.message, Number(error.exitCode) || 1);
   }
 

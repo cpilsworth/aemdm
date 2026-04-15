@@ -27,6 +27,12 @@ It is designed as a practical operator tool for both humans and LLM-driven workf
 npm install
 ```
 
+Install the CLI globally from npm:
+
+```bash
+npm install -g aemdm
+```
+
 ## Usage
 
 ```bash
@@ -183,6 +189,18 @@ aemdm asset get urn:aaid:aem:1234 --format webp --size 1600x900 --quality 80
 aemdm search --where x:y=z --first-url --format jpg --width 1200
 aemdm search --raw-query @./query.json
 ```
+
+## Publishing
+
+Before publishing a new release, verify the package contents and publish from the repo root:
+
+```bash
+npm test
+npm run pack:check
+npm publish
+```
+
+`prepack` builds `dist/`, and `prepublishOnly` runs the test suite during `npm publish`.
 
 ## References
 
