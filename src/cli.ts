@@ -476,7 +476,7 @@ function buildProgram(runtime: Runtime): Command {
   program
     .name("aemdm")
     .description("CLI for Adobe Dynamic Media with OpenAPI")
-    .version("0.3.0")
+    .version("0.4.0")
     .showHelpAfterError()
     .option("-v, --verbose", "Show additional diagnostic output")
     .configureOutput({
