@@ -23,27 +23,24 @@ It is designed as a practical operator tool for both humans and LLM-driven workf
 
 ## Install
 
-```bash
-npm install
-```
-
-Install the CLI globally from npm:
+Install globally from npm:
 
 ```bash
 npm install -g aemdm
 ```
 
-## Usage
+Or run directly with `npx`:
 
 ```bash
-npm run build
-node dist/cli.js asset get urn:aaid:aem:1234 --bucket delivery-p123-e456.adobeaemcloud.com
+npx aemdm asset get urn:aaid:aem:1234 --bucket delivery-p123-e456.adobeaemcloud.com
 ```
+
+## Usage
 
 ### URL by asset ID
 
 ```bash
-node dist/cli.js asset get urn:aaid:aem:1234 \
+npx aemdm asset get urn:aaid:aem:1234 \
   --bucket delivery-p123-e456.adobeaemcloud.com \
   --format webp \
   --size 1200x800 \
@@ -53,19 +50,19 @@ node dist/cli.js asset get urn:aaid:aem:1234 \
 ### Metadata
 
 ```bash
-node dist/cli.js asset get urn:aaid:aem:1234 --metadata
+npx aemdm asset get urn:aaid:aem:1234 --metadata
 ```
 
 If an IMS token is available, `--metadata` returns the full metadata document from the metadata endpoint. Without authentication, it returns a smaller public JSON object based on the asset response headers:
 
 ```bash
-node dist/cli.js asset get urn:aaid:aem:1234 --metadata --ims-token "$AEMDM_IMS_TOKEN"
+npx aemdm asset get urn:aaid:aem:1234 --metadata --ims-token "$AEMDM_IMS_TOKEN"
 ```
 
 ### Original binary
 
 ```bash
-node dist/cli.js asset get urn:aaid:aem:1234 \
+npx aemdm asset get urn:aaid:aem:1234 \
   --original \
   --binary \
   --output ./asset.bin
@@ -74,13 +71,13 @@ node dist/cli.js asset get urn:aaid:aem:1234 \
 Public assets can also be downloaded without passing a token:
 
 ```bash
-node dist/cli.js asset get urn:aaid:aem:1234 --binary --output ./asset.bin
+npx aemdm asset get urn:aaid:aem:1234 --binary --output ./asset.bin
 ```
 
 ### Search
 
 ```bash
-node dist/cli.js search \
+npx aemdm search \
   --where x:y=z \
   --where repositoryMetadata.dc:format=image/jpeg,image/png
 ```
@@ -90,9 +87,9 @@ node dist/cli.js search \
 The default `search` output is a compact table for humans. For automation and piping, use one of these:
 
 ```bash
-node dist/cli.js search --text "hero" --first-id
-node dist/cli.js search --text "hero" --ids-only
-node dist/cli.js search --text "hero" --json
+npx aemdm search --text "hero" --first-id
+npx aemdm search --text "hero" --ids-only
+npx aemdm search --text "hero" --json
 ```
 
 These are useful when another command needs an asset ID:
@@ -113,7 +110,7 @@ aemdm search --text "hero" --json | jq -r '.hits.results[0].assetId'
 Use `--skill` to print a concise guide that explains what the tool does, which commands to use, and how an LLM should choose between them.
 
 ```bash
-node dist/cli.js --skill
+npx aemdm --skill
 ```
 
 Example output areas:
@@ -130,22 +127,22 @@ Example output areas:
 You can save the bucket once and omit `--bucket` from later commands:
 
 ```bash
-node dist/cli.js --bucket delivery-p123-e456.adobeaemcloud.com
+npx aemdm --bucket delivery-p123-e456.adobeaemcloud.com
 ```
 
 After that, regular commands can use the saved profile bucket:
 
 ```bash
-node dist/cli.js asset get urn:aaid:aem:1234
-node dist/cli.js search --where x:y=z
+npx aemdm asset get urn:aaid:aem:1234
+npx aemdm search --where x:y=z
 ```
 
 ### First result helpers
 
 ```bash
-node dist/cli.js search --text "hero banner" --first-url --format webp --width 800
-node dist/cli.js search --text "hero banner" --first-metadata
-node dist/cli.js search --text "hero banner" --first-binary --output ./hero.bin
+npx aemdm search --text "hero banner" --first-url --format webp --width 800
+npx aemdm search --text "hero banner" --first-metadata
+npx aemdm search --text "hero banner" --first-binary --output ./hero.bin
 ```
 
 ## Configuration
@@ -171,7 +168,7 @@ Profile config path:
 These are especially useful when another tool or agent needs to understand how to call `aemdm`.
 
 ```bash
-node dist/cli.js --skill
+npx aemdm --skill
 ```
 
 ```bash
@@ -204,7 +201,7 @@ npm publish
 
 ### Automated npm publish from GitHub
 
-The repository includes a GitHub Actions workflow that publishes to npm when you push a version tag like `v0.1.0` or publish a GitHub release for that tag.
+The repository includes a GitHub Actions workflow that publishes to npm when you push a version tag like `v0.1.2` or publish a GitHub release for that tag.
 
 Required setup:
 
@@ -217,8 +214,8 @@ Add `NPM_TOKEN` as a GitHub repository secret with permission to publish the `ae
 Release flow:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 The workflow verifies that the tag matches the `version` field in `package.json`, runs `lint`, `build`, and `test`, and then publishes the package.
