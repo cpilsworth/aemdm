@@ -189,36 +189,19 @@ aemdm search --raw-query @./query.json
 
 ## Publishing
 
-Before publishing a new release, verify the package contents and publish from the repo root:
+The repository includes a `/release` skill for Claude Code that automates the full release process:
 
-```bash
-npm test
-npm run pack:check
-npm publish
+```
+/release patch   # 0.2.1 → 0.2.2
+/release minor   # 0.2.1 → 0.3.0
+/release major   # 0.2.1 → 1.0.0
 ```
 
-`prepack` builds `dist/`, and `prepublishOnly` runs the test suite during `npm publish`.
+The skill bumps the version across all files, builds, tests, commits, pushes, creates a git tag, and creates a GitHub release.
 
-### Automated npm publish from GitHub
+Publishing to npm is triggered automatically when a GitHub release is created. The workflow uses npm trusted publishing (OIDC) via the `npm` GitHub environment — no token secret is needed.
 
-The repository includes a GitHub Actions workflow that publishes to npm when you push a version tag like `v0.2.2` or publish a GitHub release for that tag.
-
-Required setup:
-
-```bash
-NPM_TOKEN
-```
-
-Add `NPM_TOKEN` as a GitHub repository secret with permission to publish the `aemdm` package on npm.
-
-Release flow:
-
-```bash
-git tag v0.2.2
-git push origin v0.2.2
-```
-
-The workflow verifies that the tag matches the `version` field in `package.json`, runs `lint`, `build`, and `test`, and then publishes the package.
+The workflow verifies that the release tag matches the `version` field in `package.json`, runs `lint`, `build`, and `test`, and then publishes the package with provenance.
 
 ## References
 
