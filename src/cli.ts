@@ -39,7 +39,14 @@ type Runtime = {
   stdout: NodeJS.WritableStream;
   stderr: NodeJS.WritableStream;
   fetchImpl: typeof fetch;
+  verbose: boolean;
 };
+
+function verbose(runtime: Runtime, message: string): void {
+  if (runtime.verbose) {
+    writeLine(runtime.stderr, `[verbose] ${message}`);
+  }
+}
 
 type AssetGetOptions = {
   bucket?: string;
@@ -263,6 +270,15 @@ async function handleAssetGet(
   const imsToken = resolveOptionalImsToken(parsed.imsToken, runtime.env);
   const dimensions = resolveDimensions(parsed.size, parsed.width, parsed.height);
 
+  verbose(runtime, `bucket: ${baseUrl}`);
+  verbose(runtime, `asset:  ${assetId}`);
+  if (imsToken) verbose(runtime, `auth:   IMS token provided`);
+  if (dimensions.width || dimensions.height) {
+    verbose(runtime, `dimensions: ${dimensions.width ?? "auto"}x${dimensions.height ?? "auto"}`);
+  }
+  if (parsed.format) verbose(runtime, `format: ${parsed.format}`);
+  if (parsed.quality) verbose(runtime, `quality: ${parsed.quality}`);
+
   if (parsed.metadata) {
     const metadata = imsToken
       ? await requestJson(buildMetadataUrl(baseUrl, assetId), {
@@ -319,6 +335,16 @@ async function handleSearch(options: SearchOptions, runtime: Runtime): Promise<v
   const { imsToken, apiKey } = resolveSearchAuth(parsed.imsToken, parsed.apiKey, runtime.env);
   const searchBody = await buildSearchBody(parsed);
   const searchUrl = `${baseUrl}/search`;
+
+  verbose(runtime, `bucket:   ${baseUrl}`);
+  verbose(runtime, `search:   POST ${searchUrl}`);
+  verbose(runtime, `api-key:  ${apiKey}`);
+  verbose(runtime, `auth:     IMS token provided`);
+  if (parsed.text) verbose(runtime, `text:     "${parsed.text}"`);
+  if (parsed.where.length > 0) verbose(runtime, `where:    ${parsed.where.join(", ")}`);
+  if (parsed.limit !== undefined) verbose(runtime, `limit:    ${parsed.limit}`);
+  if (parsed.rawQuery) verbose(runtime, `raw-query: ${parsed.rawQuery}`);
+
   const response = await requestJson<SearchResponse>(searchUrl, {
     method: "POST",
     imsToken,
@@ -326,6 +352,10 @@ async function handleSearch(options: SearchOptions, runtime: Runtime): Promise<v
     jsonBody: searchBody,
     fetchImpl: runtime.fetchImpl,
   });
+
+  const resultCount = response.hits?.results?.length ?? 0;
+  const totalCount = response.search_metadata?.totalCount?.total;
+  verbose(runtime, `results:  ${resultCount} returned${totalCount !== undefined ? ` (${totalCount} total)` : ""}`);
 
   if (parsed.json) {
     writeJson(runtime.stdout, response);
@@ -444,13 +474,17 @@ function buildProgram(runtime: Runtime): Command {
   program
     .name("aemdm")
     .description("CLI for Adobe Dynamic Media with OpenAPI")
-    .version("0.1.0")
+    .version("0.1.3")
     .showHelpAfterError()
+    .option("-v, --verbose", "Show additional diagnostic output")
     .configureOutput({
       writeOut: (text) => runtime.stdout.write(text),
       writeErr: (text) => runtime.stderr.write(text),
     })
-    .exitOverride();
+    .exitOverride()
+    .hook("preAction", () => {
+      runtime.verbose = program.opts().verbose === true;
+    });
 
   configureCommonDeliveryOptions(
     program.command("asset").description("Asset operations"),
@@ -593,6 +627,7 @@ export async function runCli(
     stdout: process.stdout,
     stderr: process.stderr,
     fetchImpl: fetch,
+    verbose: false,
     ...runtimeOverrides,
   };
 
