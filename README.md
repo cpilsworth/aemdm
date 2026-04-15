@@ -202,6 +202,27 @@ npm publish
 
 `prepack` builds `dist/`, and `prepublishOnly` runs the test suite during `npm publish`.
 
+### Automated npm publish from GitHub
+
+The repository includes a GitHub Actions workflow that publishes to npm when you push a version tag like `v0.1.0` or publish a GitHub release for that tag.
+
+Required setup:
+
+```bash
+NPM_TOKEN
+```
+
+Add `NPM_TOKEN` as a GitHub repository secret with permission to publish the `aemdm` package on npm.
+
+Release flow:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow verifies that the tag matches the `version` field in `package.json`, runs `lint`, `build`, and `test`, and then publishes the package.
+
 ## References
 
 - [Dynamic Media with OpenAPI spec](https://developer.adobe.com/experience-cloud/experience-manager-apis/api/stable/assets/delivery/)
