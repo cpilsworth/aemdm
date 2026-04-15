@@ -483,6 +483,33 @@ function buildProgram(runtime: Runtime): Command {
     .version(pkg.version)
     .showHelpAfterError()
     .option("-v, --verbose", "Show additional diagnostic output")
+    .addHelpText("after", `
+Bucket:
+  Most commands need a delivery bucket. Provide it in one of three ways:
+    1. --bucket delivery-p123-e456.adobeaemcloud.com  (per-command flag)
+    2. AEMDM_BUCKET environment variable
+    3. Save a default:  aemdm --bucket delivery-p123-e456.adobeaemcloud.com
+       This writes to ~/.aemdm/config.json and is used when no flag or env var is set.
+
+Authentication:
+  Public asset URLs and basic metadata (HEAD-based) require no authentication.
+  Full metadata, binary downloads, and search require an IMS bearer token:
+    1. --ims-token <token>  (per-command flag)
+    2. AEMDM_IMS_TOKEN environment variable
+    3. Save a default:  aemdm --ims-token <token>
+       This writes the token to ~/.aemdm/config.json for reuse.
+
+  Search also requires an Adobe API key:
+    1. --api-key <key>  (per-command flag)
+    2. AEMDM_API_KEY environment variable
+
+Examples:
+  aemdm --bucket delivery-p123-e456.adobeaemcloud.com   Save default bucket
+  aemdm asset get urn:aaid:aem:1234                      Print delivery URL
+  aemdm asset get urn:aaid:aem:1234 --format webp        Print URL with format
+  aemdm asset get urn:aaid:aem:1234 --metadata            Fetch asset metadata
+  aemdm search --text "hero banner"                      Search by text
+  aemdm search --text "logo" --first-url --format png    Search and get URL`)
     .configureOutput({
       writeOut: (text) => runtime.stdout.write(text),
       writeErr: (text) => runtime.stderr.write(text),
@@ -539,12 +566,30 @@ Core commands:
 - aemdm asset get <assetId>
 - aemdm search
 
+Bucket configuration (pick one):
+- --bucket delivery-p123-e456.adobeaemcloud.com  (per-command flag)
+- AEMDM_BUCKET environment variable
+- Save a default: aemdm --bucket delivery-p123-e456.adobeaemcloud.com
+  This writes to ~/.aemdm/config.json and is used when no flag or env var is set.
+
+Authentication:
+- Public asset URLs and basic metadata (HEAD-based) require no authentication.
+- Full metadata, binary downloads, and search require an IMS bearer token (pick one):
+  1. --ims-token <token>  (per-command flag)
+  2. AEMDM_IMS_TOKEN environment variable
+  3. Save a default: aemdm --ims-token <token>
+     This writes the token to ~/.aemdm/config.json for reuse.
+- Both bucket and token can be saved together: aemdm --bucket <host> --ims-token <token>
+- Search also requires an Adobe API key via --api-key <key> or AEMDM_API_KEY.
+
+URL format:
+- Delivery URLs follow the pattern: https://<bucket>/adobe/assets/<assetId>/as/<seoName>.<format>
+- Default seo-name is "asset", default format is "png".
+- Use --format to override (gif, png, jpg, jpeg, webp, avif).
+- Use --seo-name to set a custom SEO-friendly name segment.
+
 Important defaults:
-- Bucket comes from --bucket or AEMDM_BUCKET.
-- A standalone call like aemdm --bucket delivery-p123-e456.adobeaemcloud.com saves the default bucket to the local aemdm profile config.
-- aemdm --ims-token <token> saves the IMS token to the profile config. Both can be saved together.
-- Search auth comes from --ims-token/AEMDM_IMS_TOKEN/profile config and --api-key/AEMDM_API_KEY.
-- asset get prints a URL by default.
+- asset get prints a delivery URL by default.
 - asset get --metadata prints full JSON metadata when authenticated, or basic public JSON metadata when no token is supplied.
 - asset get --binary downloads the asset and requires --output.
 - search --first-id prints one asset ID for piping.
