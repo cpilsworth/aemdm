@@ -89,7 +89,7 @@ describe("cli integration", () => {
     });
 
     expect(exitCode).toBe(0);
-    expect(stdout.toString()).toContain("Saved bucket to profile config");
+    expect(stdout.toString()).toContain("Saved bucket:");
     expect(stderr.toString()).toBe("");
   });
 

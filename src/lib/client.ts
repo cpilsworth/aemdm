@@ -57,16 +57,18 @@ export function resolveBucket(
 export function resolveOptionalImsToken(
   explicitValue: string | undefined,
   env: NodeJS.ProcessEnv,
+  profileImsToken?: string,
 ): string | undefined {
-  return explicitValue ?? env.AEMDM_IMS_TOKEN;
+  return explicitValue ?? env.AEMDM_IMS_TOKEN ?? profileImsToken;
 }
 
 export function resolveSearchAuth(
   imsToken: string | undefined,
   apiKey: string | undefined,
   env: NodeJS.ProcessEnv,
+  profileImsToken?: string,
 ): { imsToken: string; apiKey: string } {
-  const resolvedImsToken = imsToken ?? env.AEMDM_IMS_TOKEN;
+  const resolvedImsToken = imsToken ?? env.AEMDM_IMS_TOKEN ?? profileImsToken;
   const resolvedApiKey = apiKey ?? env.AEMDM_API_KEY ?? "asset_search_service";
 
   if (!resolvedImsToken) {

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const profileSchema = z.object({
   bucket: z.string().optional(),
+  imsToken: z.string().optional(),
 });
 
 export type ProfileConfig = z.infer<typeof profileSchema>;

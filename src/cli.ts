@@ -6,6 +6,7 @@ import { Command, CommanderError, Option } from "commander";
 import { z } from "zod";
 import {
   CliError,
+  normalizeBucket,
   request,
   requestJson,
   resolveBucket,
@@ -268,7 +269,7 @@ async function handleAssetGet(
   const parsed = parseWithSchema(assetGetSchema, options);
   const profile = await readProfileConfig(runtime.env);
   const baseUrl = resolveBucket(parsed.bucket, runtime.env, profile.bucket);
-  const imsToken = resolveOptionalImsToken(parsed.imsToken, runtime.env);
+  const imsToken = resolveOptionalImsToken(parsed.imsToken, runtime.env, profile.imsToken);
   const dimensions = resolveDimensions(parsed.size, parsed.width, parsed.height);
 
   verbose(runtime, `bucket: ${baseUrl}`);
@@ -333,7 +334,7 @@ async function handleSearch(options: SearchOptions, runtime: Runtime): Promise<v
   const parsed = parseWithSchema(searchSchema, options);
   const profile = await readProfileConfig(runtime.env);
   const baseUrl = resolveBucket(parsed.bucket, runtime.env, profile.bucket);
-  const { imsToken, apiKey } = resolveSearchAuth(parsed.imsToken, parsed.apiKey, runtime.env);
+  const { imsToken, apiKey } = resolveSearchAuth(parsed.imsToken, parsed.apiKey, runtime.env, profile.imsToken);
   const searchBody = await buildSearchBody(parsed);
   const searchUrl = `${baseUrl}/search`;
 
@@ -537,7 +538,8 @@ Core commands:
 Important defaults:
 - Bucket comes from --bucket or AEMDM_BUCKET.
 - A standalone call like aemdm --bucket delivery-p123-e456.adobeaemcloud.com saves the default bucket to the local aemdm profile config.
-- Search auth comes from --ims-token/AEMDM_IMS_TOKEN and --api-key/AEMDM_API_KEY.
+- aemdm --ims-token <token> saves the IMS token to the profile config. Both can be saved together.
+- Search auth comes from --ims-token/AEMDM_IMS_TOKEN/profile config and --api-key/AEMDM_API_KEY.
 - asset get prints a URL by default.
 - asset get --metadata prints full JSON metadata when authenticated, or basic public JSON metadata when no token is supplied.
 - asset get --binary downloads the asset and requires --output.
@@ -581,16 +583,31 @@ LLM usage guidance:
 `;
 }
 
-function getStandaloneBucketValue(argv: string[]): string | undefined {
-  if (argv.length === 1 && argv[0].startsWith("--bucket=")) {
-    return argv[0].slice("--bucket=".length);
+function parseStandaloneConfig(argv: string[]): { bucket?: string; imsToken?: string } | undefined {
+  const config: { bucket?: string; imsToken?: string } = {};
+  const args = [...argv];
+
+  while (args.length > 0) {
+    const arg = args.shift()!;
+
+    if (arg.startsWith("--bucket=")) {
+      config.bucket = arg.slice("--bucket=".length);
+    } else if (arg === "--bucket" && args.length > 0) {
+      config.bucket = args.shift()!;
+    } else if (arg.startsWith("--ims-token=")) {
+      config.imsToken = arg.slice("--ims-token=".length);
+    } else if (arg === "--ims-token" && args.length > 0) {
+      config.imsToken = args.shift()!;
+    } else {
+      return undefined;
+    }
   }
 
-  if (argv.length === 2 && argv[0] === "--bucket") {
-    return argv[1];
+  if (!config.bucket && !config.imsToken) {
+    return undefined;
   }
 
-  return undefined;
+  return config;
 }
 
 function toCliError(error: unknown): CliError {
@@ -633,11 +650,19 @@ export async function runCli(
   };
 
   try {
-    const standaloneBucket = getStandaloneBucketValue(argv);
-    if (standaloneBucket !== undefined) {
-      const bucket = resolveBucket(standaloneBucket, runtime.env);
-      const configPath = await writeProfileConfig(runtime.env, { bucket });
-      writeLine(runtime.stdout, `Saved bucket to profile config: ${bucket}`);
+    const standaloneConfig = parseStandaloneConfig(argv);
+    if (standaloneConfig !== undefined) {
+      const existing = await readProfileConfig(runtime.env);
+      const merged = { ...existing };
+      if (standaloneConfig.bucket) {
+        merged.bucket = normalizeBucket(standaloneConfig.bucket);
+      }
+      if (standaloneConfig.imsToken) {
+        merged.imsToken = standaloneConfig.imsToken;
+      }
+      const configPath = await writeProfileConfig(runtime.env, merged);
+      if (merged.bucket) writeLine(runtime.stdout, `Saved bucket: ${merged.bucket}`);
+      if (standaloneConfig.imsToken) writeLine(runtime.stdout, `Saved IMS token to profile config`);
       writeLine(runtime.stdout, `Config file: ${configPath}`);
       return 0;
     }
