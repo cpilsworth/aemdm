@@ -18,7 +18,7 @@ describe("delivery helpers", () => {
     });
 
     expect(url).toBe(
-      "https://delivery.example.com/adobe/assets/urn%3Aaaid%3Aaem%3A1234/as/hero.webp?width=1200&height=800&quality=75",
+      "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/as/hero.webp?width=1200&height=800&quality=75",
     );
   });
 
@@ -30,7 +30,7 @@ describe("delivery helpers", () => {
     });
 
     expect(url).toBe(
-      "https://delivery.example.com/adobe/assets/urn%3Aaaid%3Aaem%3A1234/original/as/source-file",
+      "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/original/as/source-file",
     );
   });
 
@@ -39,7 +39,7 @@ describe("delivery helpers", () => {
       assetId: "urn:aaid:aem:1234",
     });
 
-    expect(url).toBe("https://delivery.example.com/adobe/assets/urn%3Aaaid%3Aaem%3A1234");
+    expect(url).toBe("https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/as/asset.png");
   });
 
   test("parses size shortcuts", () => {
@@ -57,7 +57,7 @@ describe("delivery helpers", () => {
 
   test("builds metadata route", () => {
     expect(buildMetadataUrl("https://delivery.example.com/adobe/assets", "urn:aaid:aem:1234")).toBe(
-      "https://delivery.example.com/adobe/assets/urn%3Aaaid%3Aaem%3A1234/metadata",
+      "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/metadata",
     );
   });
 });

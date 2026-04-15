@@ -2,7 +2,7 @@ import { z } from "zod";
 import { CliError } from "./client.js";
 
 export const DEFAULT_SEO_NAME = "asset";
-export const TRANSFORM_FALLBACK_FORMAT = "avif";
+export const TRANSFORM_FALLBACK_FORMAT = "png";
 
 export const deliveryFormatSchema = z.enum(["gif", "png", "jpg", "jpeg", "webp", "avif"]);
 
@@ -71,13 +71,13 @@ export function resolveDimensions(
 }
 
 export function buildMetadataUrl(baseUrl: string, assetId: string): string {
-  return `${baseUrl.replace(/\/+$/, "")}/${encodeURIComponent(assetId)}/metadata`;
+  return `${baseUrl.replace(/\/+$/, "")}/${assetId}/metadata`;
 }
 
 export function buildAssetUrl(baseUrl: string, options: DeliveryOptions): string {
   const seoName = options.seoName ?? DEFAULT_SEO_NAME;
   const normalizedBase = baseUrl.replace(/\/+$/, "");
-  const encodedAssetId = encodeURIComponent(options.assetId);
+  const encodedAssetId = options.assetId;
   const encodedSeoName = encodeURIComponent(seoName);
 
   if (options.quality !== undefined) {
@@ -107,30 +107,26 @@ export function buildAssetUrl(baseUrl: string, options: DeliveryOptions): string
     options.quality !== undefined ||
     options.maxQuality !== undefined;
 
-  if (!shouldUseTransformRoute) {
-    return `${normalizedBase}/${encodedAssetId}`;
-  }
-
   const format = options.format ?? TRANSFORM_FALLBACK_FORMAT;
-  const url = new URL(
-    `${normalizedBase}/${encodedAssetId}/as/${encodedSeoName}.${format}`,
-  );
 
+  if (!shouldUseTransformRoute) {
+    return `${normalizedBase}/${encodedAssetId}/as/${encodedSeoName}.${format}`;
+  }
+  const base = `${normalizedBase}/${encodedAssetId}/as/${encodedSeoName}.${format}`;
+
+  const params: string[] = [];
   if (options.width !== undefined) {
-    url.searchParams.set("width", String(options.width));
+    params.push(`width=${options.width}`);
   }
-
   if (options.height !== undefined) {
-    url.searchParams.set("height", String(options.height));
+    params.push(`height=${options.height}`);
   }
-
   if (options.quality !== undefined) {
-    url.searchParams.set("quality", String(options.quality));
+    params.push(`quality=${options.quality}`);
   }
-
   if (options.maxQuality !== undefined) {
-    url.searchParams.set("max-quality", String(options.maxQuality));
+    params.push(`max-quality=${options.maxQuality}`);
   }
 
-  return url.toString();
+  return params.length > 0 ? `${base}?${params.join("&")}` : base;
 }

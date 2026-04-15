@@ -37,7 +37,7 @@ describe("cli integration", () => {
 
     expect(exitCode).toBe(0);
     expect(stdout.toString().trim()).toBe(
-      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn%3Aaaid%3Aaem%3A1234",
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/as/asset.png",
     );
     expect(stderr.toString()).toBe("");
   });
@@ -118,7 +118,7 @@ describe("cli integration", () => {
 
     expect(exitCode).toBe(0);
     expect(stdout.toString().trim()).toBe(
-      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn%3Aaaid%3Aaem%3A1234",
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/as/asset.png",
     );
   });
 
@@ -174,7 +174,7 @@ describe("cli integration", () => {
     expect(stdout.toString()).toContain('"contentType": "image/webp"');
     expect(stdout.toString()).toContain('"contentLength": 12345');
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn%3Aaaid%3Aaem%3A1234",
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/as/asset.png",
       { method: "HEAD" },
     );
     expect(stderr.toString()).toBe("");
@@ -291,7 +291,7 @@ describe("cli integration", () => {
 
     expect(exitCode).toBe(0);
     expect(stdout.toString().trim()).toBe(
-      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn%3Aaaid%3Aaem%3Aabcd/as/asset.webp?width=600",
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:abcd/as/asset.webp?width=600",
     );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
