@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+import { realpathSync } from "node:fs";
 import { Command, CommanderError, Option } from "commander";
 import { z } from "zod";
 import {
@@ -474,7 +475,7 @@ function buildProgram(runtime: Runtime): Command {
   program
     .name("aemdm")
     .description("CLI for Adobe Dynamic Media with OpenAPI")
-    .version("0.1.3")
+    .version("0.2.0")
     .showHelpAfterError()
     .option("-v, --verbose", "Show additional diagnostic output")
     .configureOutput({
@@ -660,7 +661,7 @@ export async function runCli(
 
 const executedDirectly =
   process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+  fileURLToPath(import.meta.url) === realpathSync(process.argv[1]);
 
 if (executedDirectly) {
   const exitCode = await runCli(process.argv.slice(2));
