@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { realpathSync } from "node:fs";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
 import { Command, CommanderError, Option } from "commander";
 import { z } from "zod";
 import {
@@ -475,8 +479,8 @@ function buildProgram(runtime: Runtime): Command {
   const program = new Command();
   program
     .name("aemdm")
-    .description("CLI for Adobe Dynamic Media with OpenAPI")
-    .version("0.4.0")
+    .description(`CLI for Adobe Dynamic Media with OpenAPI v${pkg.version}`)
+    .version(pkg.version)
     .showHelpAfterError()
     .option("-v, --verbose", "Show additional diagnostic output")
     .configureOutput({
