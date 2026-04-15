@@ -24,12 +24,80 @@ describe("cli integration", () => {
     AEMDM_API_KEY: "test-api-key",
   };
 
-  test("prints URL by asset ID", async () => {
+  test("authenticated asset get fetches metadata to resolve mime type for images", async () => {
+    const stdout = new MemoryStream();
+    const stderr = new MemoryStream();
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          assetId: "urn:aaid:aem:1234",
+          repositoryMetadata: { "dc:format": "image/jpeg" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const exitCode = await runCli(["asset", "get", "urn:aaid:aem:1234"], {
+      env,
+      stdout: stdout as never,
+      stderr: stderr as never,
+      fetchImpl,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.toString().trim()).toBe(
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/as/asset.png",
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test("authenticated asset get uses original route for document mime type", async () => {
+    const stdout = new MemoryStream();
+    const stderr = new MemoryStream();
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          assetId: "urn:aaid:aem:1234",
+          repositoryMetadata: { "dc:format": "application/pdf" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    const exitCode = await runCli(["asset", "get", "urn:aaid:aem:1234"], {
+      env,
+      stdout: stdout as never,
+      stderr: stderr as never,
+      fetchImpl,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.toString().trim()).toBe(
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/original/as/asset",
+    );
+  });
+
+  test("unauthenticated asset get without format errors", async () => {
     const stdout = new MemoryStream();
     const stderr = new MemoryStream();
 
     const exitCode = await runCli(["asset", "get", "urn:aaid:aem:1234"], {
-      env,
+      env: { AEMDM_BUCKET: "delivery-p123-e456.adobeaemcloud.com" },
+      stdout: stdout as never,
+      stderr: stderr as never,
+      fetchImpl: vi.fn(),
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr.toString()).toContain("--format");
+  });
+
+  test("unauthenticated asset get with explicit format prints URL", async () => {
+    const stdout = new MemoryStream();
+    const stderr = new MemoryStream();
+
+    const exitCode = await runCli(["asset", "--format", "webp", "get", "urn:aaid:aem:1234"], {
+      env: { AEMDM_BUCKET: "delivery-p123-e456.adobeaemcloud.com" },
       stdout: stdout as never,
       stderr: stderr as never,
       fetchImpl: vi.fn(),
@@ -37,9 +105,52 @@ describe("cli integration", () => {
 
     expect(exitCode).toBe(0);
     expect(stdout.toString().trim()).toBe(
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/as/asset.webp",
+    );
+  });
+
+  test("asset get with --mime-type skips metadata call", async () => {
+    const stdout = new MemoryStream();
+    const stderr = new MemoryStream();
+    const fetchImpl = vi.fn();
+
+    const exitCode = await runCli(
+      ["asset", "get", "urn:aaid:aem:1234", "--mime-type", "application/pdf"],
+      {
+        env: { AEMDM_BUCKET: "delivery-p123-e456.adobeaemcloud.com" },
+        stdout: stdout as never,
+        stderr: stderr as never,
+        fetchImpl,
+      },
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stdout.toString().trim()).toBe(
+      "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/original/as/asset",
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  test("asset get with --mime-type image prints image URL", async () => {
+    const stdout = new MemoryStream();
+    const stderr = new MemoryStream();
+    const fetchImpl = vi.fn();
+
+    const exitCode = await runCli(
+      ["asset", "get", "urn:aaid:aem:1234", "--mime-type", "image/jpeg"],
+      {
+        env: { AEMDM_BUCKET: "delivery-p123-e456.adobeaemcloud.com" },
+        stdout: stdout as never,
+        stderr: stderr as never,
+        fetchImpl,
+      },
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stdout.toString().trim()).toBe(
       "https://delivery-p123-e456.adobeaemcloud.com/adobe/assets/urn:aaid:aem:1234/as/asset.png",
     );
-    expect(stderr.toString()).toBe("");
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   test("prints skill guidance for LLM usage", async () => {
@@ -105,6 +216,16 @@ describe("cli integration", () => {
       fetchImpl: vi.fn(),
     });
 
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          assetId: "urn:aaid:aem:1234",
+          repositoryMetadata: { "dc:format": "image/png" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
     const exitCode = await runCli(["asset", "get", "urn:aaid:aem:1234"], {
       env: {
         HOME: tempDir,
@@ -113,7 +234,7 @@ describe("cli integration", () => {
       },
       stdout: stdout as never,
       stderr: stderr as never,
-      fetchImpl: vi.fn(),
+      fetchImpl,
     });
 
     expect(exitCode).toBe(0);

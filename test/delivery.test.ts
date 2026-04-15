@@ -55,6 +55,51 @@ describe("delivery helpers", () => {
     });
   });
 
+  test("uses original route for document MIME types", () => {
+    const url = buildAssetUrl("https://delivery.example.com/adobe/assets", {
+      assetId: "urn:aaid:aem:1234",
+      mimeType: "application/pdf",
+    });
+
+    expect(url).toBe(
+      "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/original/as/asset",
+    );
+  });
+
+  test("uses original route for video MIME types", () => {
+    const url = buildAssetUrl("https://delivery.example.com/adobe/assets", {
+      assetId: "urn:aaid:aem:1234",
+      mimeType: "video/mp4",
+    });
+
+    expect(url).toBe(
+      "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/original/as/asset",
+    );
+  });
+
+  test("uses image route for image MIME types", () => {
+    const url = buildAssetUrl("https://delivery.example.com/adobe/assets", {
+      assetId: "urn:aaid:aem:1234",
+      mimeType: "image/jpeg",
+    });
+
+    expect(url).toBe(
+      "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/as/asset.png",
+    );
+  });
+
+  test("explicit original flag takes precedence over image MIME type", () => {
+    const url = buildAssetUrl("https://delivery.example.com/adobe/assets", {
+      assetId: "urn:aaid:aem:1234",
+      mimeType: "image/jpeg",
+      original: true,
+    });
+
+    expect(url).toBe(
+      "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/original/as/asset",
+    );
+  });
+
   test("builds metadata route", () => {
     expect(buildMetadataUrl("https://delivery.example.com/adobe/assets", "urn:aaid:aem:1234")).toBe(
       "https://delivery.example.com/adobe/assets/urn:aaid:aem:1234/metadata",

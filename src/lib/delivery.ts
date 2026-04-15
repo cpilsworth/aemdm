@@ -20,7 +20,12 @@ export type DeliveryOptions = {
   quality?: number;
   maxQuality?: number;
   original?: boolean;
+  mimeType?: string;
 };
+
+function isImageMimeType(mimeType: string): boolean {
+  return mimeType.startsWith("image/");
+}
 
 export function parseSize(value: string): { width?: number; height?: number } {
   const match = /^(?<width>\d+)?x(?<height>\d+)?$/i.exec(value.trim());
@@ -96,7 +101,10 @@ export function buildAssetUrl(baseUrl: string, options: DeliveryOptions): string
     dimensionSchema.parse(options.height);
   }
 
-  if (options.original) {
+  const useOriginal = options.original ||
+    (options.mimeType !== undefined && !isImageMimeType(options.mimeType));
+
+  if (useOriginal) {
     return `${normalizedBase}/${encodedAssetId}/original/as/${encodedSeoName}`;
   }
 

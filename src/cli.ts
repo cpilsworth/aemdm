@@ -68,6 +68,7 @@ type AssetGetOptions = {
   output?: string;
   metadata?: boolean;
   imsToken?: string;
+  mimeType?: string;
 };
 
 type SearchOptions = {
@@ -124,6 +125,7 @@ const assetGetSchema = z
     output: z.string().optional(),
     metadata: z.boolean().default(false),
     imsToken: z.string().optional(),
+    mimeType: z.string().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.metadata && value.output) {
@@ -296,6 +298,23 @@ async function handleAssetGet(
     return;
   }
 
+  let mimeType: string | undefined = parsed.mimeType;
+  if (!parsed.original && !parsed.format && !parsed.binary && !mimeType) {
+    if (imsToken) {
+      const metadata = await requestJson(buildMetadataUrl(baseUrl, assetId), {
+        imsToken,
+        fetchImpl: runtime.fetchImpl,
+      }) as Record<string, Record<string, string>>;
+      mimeType = metadata?.repositoryMetadata?.["dc:format"];
+      if (mimeType) verbose(runtime, `detected mime type: ${mimeType}`);
+    } else {
+      throw new CliError(
+        "Cannot determine asset type without authentication. " +
+        "Provide --format for images, --original for documents, or --ims-token to auto-detect.",
+      );
+    }
+  }
+
   const url = buildAssetUrl(baseUrl, {
     assetId,
     seoName: parsed.seoName,
@@ -305,6 +324,7 @@ async function handleAssetGet(
     quality: parsed.quality,
     maxQuality: parsed.maxQuality,
     original: parsed.original,
+    mimeType,
   });
 
   if (!parsed.binary) {
@@ -399,6 +419,7 @@ async function handleSearch(options: SearchOptions, runtime: Runtime): Promise<v
     }
 
     const dimensions = resolveDimensions(parsed.size, parsed.width, parsed.height);
+    const mimeType = firstHit.repositoryMetadata?.["dc:format"] as string | undefined;
     const assetUrl = buildAssetUrl(baseUrl, {
       assetId,
       seoName: parsed.seoName,
@@ -408,6 +429,7 @@ async function handleSearch(options: SearchOptions, runtime: Runtime): Promise<v
       quality: parsed.quality,
       maxQuality: parsed.maxQuality,
       original: parsed.original,
+      mimeType,
     });
 
     if (parsed.firstUrl) {
@@ -529,7 +551,10 @@ Examples:
     .option("--output <file>", "Output file path for --binary. Use - for stdout")
     .option("--metadata", "Fetch metadata JSON instead of building a URL")
     .option("--ims-token <token>", "IMS bearer token for metadata or binary requests")
-    .action((assetId: string, options: AssetGetOptions) => handleAssetGet(assetId, options, runtime));
+    .option("--mime-type <type>", "Asset MIME type (skips metadata lookup for route detection)")
+    .action((assetId: string, options: AssetGetOptions, cmd: Command) =>
+      handleAssetGet(assetId, { ...cmd.parent!.opts(), ...options }, runtime),
+    );
 
   configureCommonDeliveryOptions(
     program.command("search").description("Search assets and optionally resolve the first result"),
@@ -583,10 +608,19 @@ Authentication:
 - Search also requires an Adobe API key via --api-key <key> or AEMDM_API_KEY.
 
 URL format:
-- Delivery URLs follow the pattern: https://<bucket>/adobe/assets/<assetId>/as/<seoName>.<format>
+- Images: https://<bucket>/adobe/assets/<assetId>/as/<seoName>.<format>
+- Documents/video: https://<bucket>/adobe/assets/<assetId>/original/as/<seoName>
 - Default seo-name is "asset", default format is "png".
 - Use --format to override (gif, png, jpg, jpeg, webp, avif).
 - Use --seo-name to set a custom SEO-friendly name segment.
+
+Route detection:
+- When authenticated, asset get auto-detects the MIME type via the metadata endpoint.
+  Images get the /as/<seoName>.<format> route; documents/video get /original/as/<seoName>.
+- When unauthenticated, you must specify --format (for images) or --original (for documents).
+- Use --mime-type <type> to skip the metadata lookup when you already know the type
+  (e.g. from a prior search result's dc:format field).
+- search --first-url auto-detects using the dc:format from the search hit (no extra call).
 
 Important defaults:
 - asset get prints a delivery URL by default.
@@ -602,6 +636,7 @@ Asset URL examples:
 - aemdm asset get urn:aaid:aem:1234 --original --binary --output ./asset.bin
 - aemdm asset get urn:aaid:aem:1234 --metadata
 - aemdm asset get urn:aaid:aem:1234 --metadata --ims-token <token>
+- aemdm asset get urn:aaid:aem:1234 --mime-type application/pdf
 
 Search examples:
 - aemdm search --text "hero banner"
@@ -627,8 +662,12 @@ LLM usage guidance:
 - Use search when you need to discover an asset by metadata or text.
 - Prefer --first-id or --ids-only when another CLI call needs asset IDs.
 - Prefer --first-url when the user wants a delivery URL from a search result.
+  --first-url uses the dc:format from the search hit to pick the correct route automatically.
 - Prefer --first-metadata when the user wants the resolved asset metadata after search.
 - Prefer --first-binary with --output when the user wants the downloaded file.
+- When piping search results to asset get, pass --mime-type with the dc:format from the
+  search result to avoid an extra metadata call and ensure the correct route.
+  Example: aemdm asset get <id> --mime-type application/pdf
 `;
 }
 
