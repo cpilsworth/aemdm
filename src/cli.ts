@@ -640,6 +640,7 @@ Asset URL examples:
 
 Search examples:
 - aemdm search --text "hero banner"
+- aemdm search --text "hero images" --json
 - aemdm search --where x:y=z
 - aemdm search --where repositoryMetadata.dc:format=image/jpeg,image/png
 - aemdm search --first-id --where x:y=z
@@ -648,6 +649,15 @@ Search examples:
 - aemdm search --text "homepage" --first-url --format webp --width 800
 - aemdm search --text "homepage" --first-metadata
 - aemdm search --text "homepage" --first-binary --output ./first.bin
+
+Search syntax guardrails:
+- For full-text search, always use --text "<words>".
+- There is no --query flag on aemdm search.
+- Do not invent alternate flags like --query, -q, or a positional search string.
+- The search inputs are: --text, --where, and --raw-query.
+- If you are unsure which flags are valid, run aemdm search --help before guessing.
+- Good example: aemdm search --text "hero images" --json
+- Good example: aemdm search --text "hero" --first-url --format webp
 
 Filter DSL:
 - --where x:y=z maps to assetMetadata.x:y = ["z"]
@@ -660,6 +670,7 @@ Raw query escape hatch:
 LLM usage guidance:
 - Use asset get when you already know the asset ID.
 - Use search when you need to discover an asset by metadata or text.
+- For discovery from natural language, start with search --text, not a made-up flag.
 - Prefer --first-id or --ids-only when another CLI call needs asset IDs.
 - Prefer --first-url when the user wants a delivery URL from a search result.
   --first-url uses the dc:format from the search hit to pick the correct route automatically.

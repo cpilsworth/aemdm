@@ -109,6 +109,8 @@ aemdm search --text "hero" --json | jq -r '.hits.results[0].assetId'
 
 Use `--skill` to print a concise guide that explains what the tool does, which commands to use, and how an LLM should choose between them.
 
+The skill output now also includes explicit search guardrails for agents, including that full-text search uses `--text` and that `aemdm search` does not support a `--query` flag.
+
 ```bash
 npx aemdm --skill
 ```

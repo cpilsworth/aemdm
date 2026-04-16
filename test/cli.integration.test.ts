@@ -168,6 +168,8 @@ describe("cli integration", () => {
     expect(stdout.toString()).toContain("Purpose:");
     expect(stdout.toString()).toContain("aemdm asset get <assetId>");
     expect(stdout.toString()).toContain("LLM usage guidance:");
+    expect(stdout.toString()).toContain("There is no --query flag on aemdm search.");
+    expect(stdout.toString()).toContain('aemdm search --text "hero images" --json');
     expect(stderr.toString()).toBe("");
   });
 
